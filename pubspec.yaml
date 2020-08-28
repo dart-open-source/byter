@@ -1,7 +1,7 @@
-name: byter
-description: Efficiently and Easy handle fixed sized byte data for example, unsigned 8 byte integers types.
+name: pdfio
+description: A dart lib for low-level PDF parser, parse objects, fonts, images and others.
 version: 0.0.1
-homepage: https://gitee.com/almpazel/dart-byter.git
+homepage: https://gitee.com/almpazel/dart-pdfio.git
 
 ## pub publish --server=https://pub.dartlang.org -v
 
