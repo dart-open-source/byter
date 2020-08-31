@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:convert/convert.dart';
+import 'package:collection/collection.dart';
 import 'bits.dart';
 
 ///
@@ -11,10 +12,10 @@ import 'bits.dart';
 ///
 
 class Byter {
-  int offset;
-  final int start;
-  final int end;
-  List<int> buffer;
+  int offset=0;
+  int start=0;
+  int end;
+  List<int> buffer=[];
   bool bigEndian;
 
   ///  The current read position relative to the start of the buffer.
@@ -69,7 +70,7 @@ class Byter {
   Byter bytes(int count, {int position, int offset = 0}) {
     var pos = position != null ? start + position : this.offset;
     pos += offset;
-    return Byter(buffer, offset:pos, length: count);
+    return Byter(buffer.sublist(pos,pos+count));
   }
 
   /// Returns the position of the given [value] within the buffer, starting
@@ -94,17 +95,18 @@ class Byter {
   }
 
   @override
-  String toString() => 'Byter{ ${length} > ${buffer.sublist(0, min(length, 5))} }';
+  String toString() => 'Byter{ ${length} > ${buffer.sublist(0, min(buffer.length, 5))} }';
 
   String toHexString([int length]) => hex.encode(toList(length));
 
   /// Create a InputStream for reading from a List<int>
-  Byter(List<int> buffer,
-      {this.bigEndian = false, int offset = 0, int length})
-      : buffer = buffer,
-        start = offset,
-        offset = offset,
-        end = (length == null) ? buffer.length : offset + length;
+  Byter(List<int> buffer, {this.bigEndian = false, int offset = 0, int length}){
+    this.buffer.clear();
+    this.buffer.addAll(buffer);
+    this.start = offset;
+    this.offset = offset;
+    this.end = (length == null) ? this.buffer.length : offset + length;
+  }
 
   /// Read a single byte.
   int byte() {
@@ -127,7 +129,7 @@ class Byter {
   }
 
   Byter clone({bool reset = false}) {
-    var n = Byter(buffer);
+    var n = Byter(toList());
     if (reset) clear();
     return n;
   }
@@ -294,6 +296,19 @@ class Byter {
   }
 
   void eatAll(List<int> os) => os.reversed.forEach(eat);
+
+  Function eq = const ListEquality().equals;
+
+  bool isContains(String s) {
+    var sl = s.codeUnits.length;
+    print('s:$s sl:$sl offset:$offset length:$length');
+    if (sl <= length) {
+      var temp = buffer.sublist(offset, sl);
+      print('temp:$temp');
+      return eq(temp, s.codeUnits);
+    }
+    return false;
+  }
 
   
 }
