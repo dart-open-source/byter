@@ -7,7 +7,7 @@
 /// Refrences:->
 /// https://en.wikipedia.org/wiki
 ///
-library byter;
+library pdfio;
 
 export 'src/byter.dart';
 
