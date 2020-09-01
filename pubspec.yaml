@@ -1,6 +1,6 @@
 name: byter
 description: Efficiently and Easy handle fixed sized byte data for example, unsigned 8 byte integers types.
-version: 0.0.2
+version: 0.0.3
 homepage: https://gitee.com/almpazel/dart-byter.git
 
 ## pub publish --server=https://pub.dartlang.org -v
