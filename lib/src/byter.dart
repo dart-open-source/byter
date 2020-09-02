@@ -12,22 +12,26 @@ import 'bits.dart';
 ///
 
 class Byter {
-  int offset=0;
-  int start=0;
-  int end;
-  List<int> buffer=[];
+  int offset = 0;
+  final int start = 0;
+  List<int> buffer = [];
+
+  int get size => buffer.length;
+
   bool bigEndian;
 
   ///  The current read position relative to the start of the buffer.
   int get position => offset - start;
 
   /// How many bytes are left in the stream.
-  int get length => end - offset;
+  int get length => size - offset;
 
   /// Is the current position at the end of the stream?
-  bool get isEOS => offset >= end;
+  bool get isEOS => offset >= size;
 
   int get first => buffer[offset];
+  bool get isEmpty => buffer.isEmpty;
+  bool get isNotEmpty => buffer.isNotEmpty;
 
   /// Reset to the beginning of the stream.
   void rewind() {
@@ -42,17 +46,14 @@ class Byter {
 
   void clear() => buffer.clear();
 
-
   /// Copy data from [other] to this buffer, at [start] offset from the
   /// current read position, and [length] number of bytes. [offset] is
   /// the offset in [other] to start reading.
   void memcpy(int start, int length, dynamic other, [int offset = 0]) {
     if (other is Byter) {
-      buffer.setRange(this.offset + start, this.offset + start + length,
-          other.buffer, other.offset + offset);
+      buffer.setRange(this.offset + start, this.offset + start + length, other.buffer, other.offset + offset);
     } else {
-      buffer.setRange(this.offset + start, this.offset + start + length,
-          other as List<int>, offset);
+      buffer.setRange(this.offset + start, this.offset + start + length, other as List<int>, offset);
     }
   }
 
@@ -62,15 +63,15 @@ class Byter {
     buffer.fillRange(offset + start, offset + start + length, value);
   }
 
-  /// Return a Byter to read a subset of this stream. It does not
-  /// move the read position of this stream. [position] is specified relative
-  /// to the start of the buffer. If [position] is not specified, the current
-  /// read position is used. If [length] is not specified, the remainder of this
-  /// stream is used.
-  Byter bytes(int count, {int position, int offset = 0}) {
-    var pos = position != null ? start + position : this.offset;
-    pos += offset;
-    return Byter(buffer.sublist(pos,pos+count));
+  /// Return a Byter to read of this stream.
+  Byter bytes(int count) {
+    var list = <int>[];
+    var i = 0;
+    while (i < count) {
+      list.add(byte());
+      i++;
+    }
+    return Byter(list);
   }
 
   /// Returns the position of the given [value] within the buffer, starting
@@ -78,9 +79,7 @@ class Byter {
   /// returned is relative to the start of the buffer, or -1 if the [value]
   /// was not found.
   int indexOf(int value, [int offset = 0]) {
-    for (var i = this.offset + offset, end = this.offset + length;
-    i < end;
-    ++i) {
+    for (var i = this.offset + offset, end = this.offset + length; i < end; ++i) {
       if (buffer[i] == value) {
         return i - start;
       }
@@ -88,24 +87,16 @@ class Byter {
     return -1;
   }
 
-  /// Read [count] bytes from an [offset] of the current read position, without
-  /// moving the read position.
-  Byter peekBytes(int count, [int offset = 0]) {
-    return bytes(count, offset: offset);
-  }
-
   @override
-  String toString() => 'Byter{ ${length} > ${buffer.sublist(0, min(buffer.length, 5))} }';
+  String toString() => 'Byter{ length:${length} offset:${offset} start:${start} end:${size} }';
 
   String toHexString([int length]) => hex.encode(toList(length));
 
   /// Create a InputStream for reading from a List<int>
-  Byter(List<int> buffer, {this.bigEndian = false, int offset = 0, int length}){
+  Byter(List<int> buffer, {this.bigEndian = false}) {
     this.buffer.clear();
     this.buffer.addAll(buffer);
-    this.start = offset;
     this.offset = offset;
-    this.end = (length == null) ? this.buffer.length : offset + length;
   }
 
   /// Read a single byte.
@@ -118,6 +109,7 @@ class Byter {
     }
     return b;
   }
+
   /// Move the read position by back one byte.
   void nyte() {
     offset--;
@@ -143,7 +135,7 @@ class Byter {
   }
 
   List<int> toList([int length]) {
-    return buffer.sublist(offset, length!=null?length+offset:end);
+    return buffer.sublist(offset, length != null ? length + offset : size);
   }
 
   int readInt8() {
@@ -242,37 +234,18 @@ class Byter {
     var b7 = buffer[offset++] & 0xff;
     var b8 = buffer[offset++] & 0xff;
     if (bigEndian) {
-      return (b1 << 56) |
-      (b2 << 48) |
-      (b3 << 40) |
-      (b4 << 32) |
-      (b5 << 24) |
-      (b6 << 16) |
-      (b7 << 8) |
-      b8;
+      return (b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) | (b5 << 24) | (b6 << 16) | (b7 << 8) | b8;
     }
-    return (b8 << 56) |
-    (b7 << 48) |
-    (b6 << 40) |
-    (b5 << 32) |
-    (b4 << 24) |
-    (b3 << 16) |
-    (b2 << 8) |
-    b1;
+    return (b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) | (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
   }
-  
+
   Uint8List toUint8List([int offset = 0, int length]) {
     var len = length ?? this.length - offset;
     if (buffer is Uint8List) {
       var b = buffer as Uint8List;
-      return Uint8List.view(
-          b.buffer, b.offsetInBytes + this.offset + offset, len);
+      return Uint8List.view(b.buffer, b.offsetInBytes + this.offset + offset, len);
     }
-    return (buffer is Uint8List)
-        ? (buffer as Uint8List).sublist(this.offset + offset,
-        this.offset + offset + len)
-        : Uint8List.fromList(buffer.sublist(this.offset + offset,
-        this.offset + offset + len));
+    return (buffer is Uint8List) ? (buffer as Uint8List).sublist(this.offset + offset, this.offset + offset + len) : Uint8List.fromList(buffer.sublist(this.offset + offset, this.offset + offset + len));
   }
 
   Uint32List toUint32List([int offset = 0]) {
@@ -284,15 +257,16 @@ class Byter {
   }
 
   void add(dynamic b) {
-    if(b is int) buffer.add(b);
-    if(b is Byter) addAll(b.buffer);
+    if (b is int) buffer.add(b);
+
+    if (b is Byter) addAll(b.buffer);
   }
 
   void addAll(List<int> os) => os.forEach(add);
 
-  void eat(dynamic b){
-    if(b is int) buffer.insert(0, b);
-    if(b is Byter) eatAll(b.buffer);
+  void eat(dynamic b) {
+    if (b is int) buffer.insert(0, b);
+    if (b is Byter) eatAll(b.buffer);
   }
 
   void eatAll(List<int> os) => os.reversed.forEach(eat);
@@ -301,14 +275,10 @@ class Byter {
 
   bool isContains(String s) {
     var sl = s.codeUnits.length;
-    print('s:$s sl:$sl offset:$offset length:$length');
     if (sl <= length) {
       var temp = buffer.sublist(offset, sl);
-      print('temp:$temp');
       return eq(temp, s.codeUnits);
     }
     return false;
   }
-
-  
 }
