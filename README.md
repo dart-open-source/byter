@@ -20,7 +20,7 @@ A simple usage example:
 ```dart
 import 'package:byter/byter.dart';
 
-main() {
+void main() {
   //Change your printer ip
 
   var byter=Byter('hello-world'.codeUnits);
